@@ -1,4 +1,3 @@
-// Маршрутизация
 func new(ctx context.Context,
 	logger *zap.Logger,
 	lifeService service.LifeService,
@@ -7,7 +6,6 @@ func new(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("handler initialization error: %w", err)
 	}
-	// Middleware для обработчиков
 	muxHandler = handler.Decorate(muxHandler, loggingMiddleware(logger))
 
 	return muxHandler, nil
@@ -18,7 +16,6 @@ func Run(
 	logger *zap.Logger,
 	height, width int,
 ) (func(context.Context) error, error) {
-	// Сервис с игрой
 	lifeService, err := service.New(height, width)
 	if err != nil {
 		return nil, err
@@ -32,26 +29,21 @@ func Run(
 	srv := &http.Server{Addr: ":8081", Handler: muxHandler}
 
 	go func() {
-		// Запускаем сервер
 		if err := srv.ListenAndServe(); err != nil {
 			logger.Error("ListenAndServe",
 				zap.String("err", err.Error()))
 		}
 	}()
-	// Вернём функцию для завершения работы сервера
 	return srv.Shutdown, nil
 }
 
-// Middleware для логированя запросов
 func loggingMiddleware(logger *zap.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
-			// Пропуск запроса к следующему обработчику
 			next.ServeHTTP(w, r)
 
-			// Завершение логирования после выполнения запроса
 			duration := time.Since(start)
 			logger.Info("HTTP request",
 				zap.String("method", r.Method),
